@@ -1,37 +1,26 @@
 import openai
-import PyPDF2
+
 import streamlit as st
-import fitz
+import pdfplumber
 
-openai.api_key = "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"
-
-page_count = 0
-
-# get text input from the pdf file
-def extract_text_from_pdf(pdf_path):
-    text = ""
-    with open(pdf_path, 'rb') as pdf_file:
-        doc = fitz.open(pdf_file)
-
-        for page in doc:
-            text += page.get_text()
-        print(text)
-
-        """
-         pdf_reader = PyPDF2.PdfReader(pdf_file)
-        page_count = len(pdf_reader.pages)
-        for page_num in range(page_count):
-            page = pdf_reader.pages[page_num]
-
-            text += page.extract_text()
-            print(text)
-        """
-    return text
+openai.api_key = "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"
 
 # generate quiz
 def generate_quiz(text):
-    prompt =  f"Create quiz questions. Do not print anything else than the question and the answer. Please generate a multiple-choice questions (MCQs) with 4 options and a corresponding answer letter using text:\n{text}"
     # print(prompt)
+    prompt = f"""Create quiz questions based on the document provided.
+    Just print questions and answers, not other instructions.
+    Don't use information outside provided text. 
+    Please generate 3 to 4 multiple-choice questions (MCQs) per page with 4 options and a corresponding answer letter using text:\n{text}. 
+    Use template as follows for each question
+    
+    Question: question here \n
+    A: choice here \n
+    B: choice here \n
+    C: choice here \n
+    D: choice here \n
+    Answer: A or B or C or D \n
+    """
 
     response = openai.Completion.create(
         engine="text-davinci-002",
@@ -44,13 +33,15 @@ def generate_quiz(text):
     return response.choices[0].text.strip()
 
 if __name__ == "__main__":
-    file_path = './data/Copy_of_Lecture_11.pdf'
-    pdf_text = extract_text_from_pdf(file_path)
-    quiz_question = generate_quiz(pdf_text)
-    # st.write("**Generated quiz questions:** \n")
-    # st.write(quiz_question)
-    # uploaded_file = st.file_uploader("Upload a file", type=["pdf"])
+    uploaded_file = st.file_uploader("Upload a file", type=["pdf"])
 
-    # if uploaded_file is not None:        
-        # Get the file path of the uploaded PDF
-        
+    if uploaded_file is not None:
+        with pdfplumber.open(uploaded_file) as pdf:
+            text_content = ""
+            for page in pdf.pages:
+                text_content += page.extract_text()
+        quiz_question = generate_quiz(text_content)
+        st.write("**Generated quiz questions:** \n")
+        st.write(quiz_question)
+
+    
