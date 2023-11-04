@@ -1,8 +1,9 @@
 import openai
 import PyPDF2
 import streamlit as st
+import fitz
 
-openai.api_key = ""
+openai.api_key = "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"
 
 page_count = 0
 
@@ -10,16 +11,27 @@ page_count = 0
 def extract_text_from_pdf(pdf_path):
     text = ""
     with open(pdf_path, 'rb') as pdf_file:
-        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        doc = fitz.open(pdf_file)
+
+        for page in doc:
+            text += page.get_text()
+        print(text)
+
+        """
+         pdf_reader = PyPDF2.PdfReader(pdf_file)
         page_count = len(pdf_reader.pages)
         for page_num in range(page_count):
             page = pdf_reader.pages[page_num]
+
             text += page.extract_text()
+            print(text)
+        """
     return text
 
 # generate quiz
 def generate_quiz(text):
     prompt =  f"Create quiz questions. Do not print anything else than the question and the answer. Please generate a multiple-choice questions (MCQs) with 4 options and a corresponding answer letter using text:\n{text}"
+    # print(prompt)
 
     response = openai.Completion.create(
         engine="text-davinci-002",
@@ -32,7 +44,7 @@ def generate_quiz(text):
     return response.choices[0].text.strip()
 
 if __name__ == "__main__":
-    file_path = './data/Copy of Lecture 11.pdf'
+    file_path = './data/Copy_of_Lecture_11.pdf'
     pdf_text = extract_text_from_pdf(file_path)
     quiz_question = generate_quiz(pdf_text)
     # st.write("**Generated quiz questions:** \n")
